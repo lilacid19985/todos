@@ -9,11 +9,18 @@ shows only what's actually open — one card per open step, checkable in place.
 
 ```bash
 npm install
-npx prisma db push   # first time only — creates prisma/dev.db
+# point DATABASE_URL at a Postgres you can reach — a local one is simplest:
+#   docker run -d -p 5432:5432 -e POSTGRES_PASSWORD=dev --name todos-pg postgres
+echo 'DATABASE_URL="postgresql://postgres:dev@localhost:5432/postgres"' > .env
+npx prisma db push   # first time only — creates the tables
 npm run dev
 ```
 
 Open http://localhost:3000
+
+To use the deployed database from your machine instead, turn on public
+networking for the Railway Postgres service and use its `DATABASE_PUBLIC_URL`.
+It is off by default, and that URL has no host until you enable it.
 
 Optional: `node prisma/seed.mjs` fills an empty database with a few example
 todos. It refuses to run if you already have any.
@@ -52,17 +59,13 @@ next step or adds a new one. Use the Create/Save button to commit.
 
 ## Deploying
 
-**Database — Railway Postgres.** Change one line in `prisma/schema.prisma`:
+**Database — Railway Postgres.** Add a Postgres service to the project, then
+set `DATABASE_URL` on the app service to the reference `${{Postgres.DATABASE_URL}}`
+so Railway resolves it over the private network. `npm start` runs
+`prisma db push` before booting, so a fresh database gets its tables on the
+first deploy and schema changes apply on the next one.
 
-```prisma
-datasource db {
-  provider = "postgresql"   // was "sqlite"
-  url      = env("DATABASE_URL")
-}
-```
-
-Set `DATABASE_URL` to the Railway connection string, run `npx prisma db push`,
-and deploy. No application code changes.
+Railway deploys the `main` branch of the connected GitHub repo.
 
 **Password.** Set `APP_PASSWORD` in the environment and the whole site goes
 behind a single password prompt at `/login`. Leave it unset (as in the local
