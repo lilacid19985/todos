@@ -9,14 +9,18 @@ shows only what's actually open — one card per open step, checkable in place.
 
 ```bash
 npm install
-# point DATABASE_URL at a Postgres — either your own, or the Railway
-# database's DATABASE_PUBLIC_URL to share the deployed one
-echo 'DATABASE_URL="postgresql://..."' > .env
+# point DATABASE_URL at a Postgres you can reach — a local one is simplest:
+#   docker run -d -p 5432:5432 -e POSTGRES_PASSWORD=dev --name todos-pg postgres
+echo 'DATABASE_URL="postgresql://postgres:dev@localhost:5432/postgres"' > .env
 npx prisma db push   # first time only — creates the tables
 npm run dev
 ```
 
 Open http://localhost:3000
+
+To use the deployed database from your machine instead, turn on public
+networking for the Railway Postgres service and use its `DATABASE_PUBLIC_URL`.
+It is off by default, and that URL has no host until you enable it.
 
 Optional: `node prisma/seed.mjs` fills an empty database with a few example
 todos. It refuses to run if you already have any.
