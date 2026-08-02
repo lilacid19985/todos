@@ -15,8 +15,6 @@ type Draft = {
 };
 type Action = (formData: FormData) => void | Promise<void>;
 
-const EXAMPLES = ["Make a grocery list", "Go to the store", "Buy it"];
-
 /** A chain link, or the same link snapped in two. */
 function Chain({ broken }: { broken: boolean }) {
   return (
@@ -85,7 +83,7 @@ export default function TodoForm({
         unlinked: step.unlinked,
       }));
     }
-    return [blank(), blank(), blank()];
+    return [blank()];
   });
 
   // Focus a row only once it has actually rendered.
@@ -164,7 +162,6 @@ export default function TodoForm({
           required
           autoFocus
           maxLength={120}
-          placeholder="Dinner"
           defaultValue={todo?.title ?? ""}
           onKeyDown={(event) =>
             advance(event, () => stepRefs.current.get(steps[0]?.key)?.focus())
@@ -253,7 +250,7 @@ export default function TodoForm({
                 className={step.done ? "struck" : ""}
                 value={step.title}
                 maxLength={160}
-                placeholder={todo ? "Step" : EXAMPLES[index] ?? "Next step"}
+                placeholder="Step"
                 ref={(element) => {
                   stepRefs.current.set(step.key, element);
                 }}

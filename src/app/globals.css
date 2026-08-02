@@ -1156,4 +1156,11 @@ select {
   .actions {
     flex-wrap: wrap;
   }
+  /* iOS Safari zooms the page whenever a focused field computes under 16px. */
+  input[type="text"],
+  input[type="password"],
+  textarea,
+  select {
+    font-size: 16px;
+  }
 }
