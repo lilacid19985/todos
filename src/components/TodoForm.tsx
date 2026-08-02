@@ -339,11 +339,6 @@ export default function TodoForm({
             type="submit"
             formAction={deleteAction}
             formNoValidate
-            onClick={(event) => {
-              if (!window.confirm("Delete this todo and all its steps?")) {
-                event.preventDefault();
-              }
-            }}
           >
             Delete
           </button>
