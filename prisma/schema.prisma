@@ -1,0 +1,43 @@
+// Swap `provider` to "postgresql" and point DATABASE_URL at Railway to deploy.
+// Nothing else in the app needs to change.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Todo {
+  id        String   @id @default(cuid())
+  title     String
+  // 1 = Highest, 2 = High, 3 = Medium, 4 = Low, 5 = Lowest
+  priority  Int      @default(3)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  steps Step[]
+}
+
+model Step {
+  id        String    @id @default(cuid())
+  todoId    String
+  todo      Todo      @relation(fields: [todoId], references: [id], onDelete: Cascade)
+  title     String
+  position  Int
+  done      Boolean   @default(false)
+  doneAt    DateTime?
+  // true = on me, false = waiting on someone else. Who that someone is
+  // goes in the step title, e.g. "wait for Sam to send the proposal".
+  mine      Boolean   @default(true)
+  // Steps run in order by default: each one waits on the step before it.
+  // true = that link is cut, so this step runs alongside the one before
+  // instead of after it. Meaningless on the first step, which waits on
+  // nothing.
+  unlinked  Boolean   @default(false)
+  createdAt DateTime  @default(now())
+
+  @@index([todoId, position])
+}

@@ -1,0 +1,82 @@
+# todos
+
+A minimal todo tracker. Every todo is a plan of steps; the todo completes
+itself when the last step is checked off. Steps run one after another by
+default, and you can unlink any of them to run side by side. The main view
+shows only what's actually open — one card per open step, checkable in place.
+
+## Run it
+
+```bash
+npm install
+npx prisma db push   # first time only — creates prisma/dev.db
+npm run dev
+```
+
+Open http://localhost:3000
+
+Optional: `node prisma/seed.mjs` fills an empty database with a few example
+todos. It refuses to run if you already have any.
+
+## How it works
+
+- **Todos** have a title, short description, and a priority (Highest → Lowest).
+  You can't check off a todo directly.
+- **Steps** are ordered — first to last, each one waiting on the step above it.
+  Checking off the last open step completes the todo. You can check them in any
+  order; the order is a plan, not a lock.
+- **Unlink** (the chain icon on each step in the form) cuts a step loose from
+  the one directly above it, so the two run side by side instead of one after
+  the other. Unlink step 3 and steps 2 and 3 both come up as soon as 1 is done
+  — and step 4 waits for both of them. Unlink 4 as well and all three come up
+  together. Steps that run alongside each other share a number in the plan; the
+  ones after the first are marked `+`. The first step can't be unlinked, since
+  nothing runs before it.
+- **Me / someone else.** Each step is on you by default. Toggle it to "someone
+  else" for anything you're only waiting on — put their name in the step text,
+  e.g. *"wait for Sam to send the proposal"*.
+- **Next up** (the main view) shows one card per step that's open right now, so
+  a todo with unlinked steps gets a card each (they're badged "2 at once").
+  Check one off right on the card, or click it for the full plan — finished
+  steps, upcoming ones, and an Edit button top-right.
+- **Sorting**: Priority (default), Closest to done, or Owner — the last one
+  splits the board into what's on you vs. what you're waiting on.
+- **All todos** (`/all`) is the full list, including completed ones, if you want
+  the wider view.
+
+### Keyboard
+
+In the create/edit form, Enter never submits — it moves you along. Title →
+description, priority → first step, and inside the step list it jumps to the
+next step or adds a new one. Use the Create/Save button to commit.
+
+## Deploying
+
+**Database — Railway Postgres.** Change one line in `prisma/schema.prisma`:
+
+```prisma
+datasource db {
+  provider = "postgresql"   // was "sqlite"
+  url      = env("DATABASE_URL")
+}
+```
+
+Set `DATABASE_URL` to the Railway connection string, run `npx prisma db push`,
+and deploy. No application code changes.
+
+**Password.** Set `APP_PASSWORD` in the environment and the whole site goes
+behind a single password prompt at `/login`. Leave it unset (as in the local
+`.env`) and there is no login at all, which is what you want on localhost.
+
+## Layout
+
+```
+prisma/schema.prisma      Todo, Step
+src/lib/queries.ts        reads + all sorting/grouping logic
+src/lib/actions.ts        server actions (create/update/delete/toggle)
+src/app/(app)/page.tsx    main view — next-up cards + detail modal
+src/app/(app)/all         full list
+src/app/(app)/new         create form
+src/app/(app)/todo/[id]   edit form
+src/middleware.ts         password gate (no-op unless APP_PASSWORD is set)
+```

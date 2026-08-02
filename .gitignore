@@ -1,0 +1,16 @@
+node_modules
+.next
+out
+build
+*.log
+.DS_Store
+tsconfig.tsbuildinfo
+
+# Local database
+prisma/dev.db
+prisma/dev.db-journal
+prisma/migrations
+
+# Env — .env holds the local sqlite path only, but keep secrets out of git
+.env
+.env*.local
