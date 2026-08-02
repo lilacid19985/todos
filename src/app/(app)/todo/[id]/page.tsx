@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import TodoForm from "@/components/TodoForm";
 import { deleteTodo, updateTodo } from "@/lib/actions";
@@ -16,6 +17,13 @@ export default async function EditTodoPage({
 
   return (
     <>
+      <Link href="/" className="back">
+        <span className="ico" aria-hidden="true">
+          ←
+        </span>
+        Back
+      </Link>
+
       <div className="head">
         <h1 className="h1">Edit todo</h1>
       </div>

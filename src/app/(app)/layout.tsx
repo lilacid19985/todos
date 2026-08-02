@@ -1,4 +1,5 @@
 import { cookies } from "next/headers";
+import ScrollToTop from "@/components/ScrollToTop";
 import Shell from "@/components/Shell";
 import Sidebar from "@/components/Sidebar";
 
@@ -11,6 +12,7 @@ export default async function AppLayout({
 
   return (
     <Shell collapsed={collapsed} sidebar={<Sidebar />}>
+      <ScrollToTop />
       {children}
     </Shell>
   );
