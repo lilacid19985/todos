@@ -9,7 +9,10 @@ shows only what's actually open — one card per open step, checkable in place.
 
 ```bash
 npm install
-npx prisma db push   # first time only — creates prisma/dev.db
+# point DATABASE_URL at a Postgres — either your own, or the Railway
+# database's DATABASE_PUBLIC_URL to share the deployed one
+echo 'DATABASE_URL="postgresql://..."' > .env
+npx prisma db push   # first time only — creates the tables
 npm run dev
 ```
 
@@ -52,17 +55,13 @@ next step or adds a new one. Use the Create/Save button to commit.
 
 ## Deploying
 
-**Database — Railway Postgres.** Change one line in `prisma/schema.prisma`:
+**Database — Railway Postgres.** Add a Postgres service to the project, then
+set `DATABASE_URL` on the app service to the reference `${{Postgres.DATABASE_URL}}`
+so Railway resolves it over the private network. `npm start` runs
+`prisma db push` before booting, so a fresh database gets its tables on the
+first deploy and schema changes apply on the next one.
 
-```prisma
-datasource db {
-  provider = "postgresql"   // was "sqlite"
-  url      = env("DATABASE_URL")
-}
-```
-
-Set `DATABASE_URL` to the Railway connection string, run `npx prisma db push`,
-and deploy. No application code changes.
+Railway deploys the `main` branch of the connected GitHub repo.
 
 **Password.** Set `APP_PASSWORD` in the environment and the whole site goes
 behind a single password prompt at `/login`. Leave it unset (as in the local

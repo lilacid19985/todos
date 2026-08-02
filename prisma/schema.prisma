@@ -1,12 +1,13 @@
-// Swap `provider` to "postgresql" and point DATABASE_URL at Railway to deploy.
-// Nothing else in the app needs to change.
+// Postgres in every environment. DATABASE_URL comes from the Railway Postgres
+// service; locally, point it at that same database (DATABASE_PUBLIC_URL) or a
+// Postgres of your own.
 
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
