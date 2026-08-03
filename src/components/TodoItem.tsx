@@ -20,14 +20,17 @@ export default function TodoItem({ todo }: { todo: TodoView }) {
   } else subline = "No steps yet";
 
   return (
-    <div className="row" style={priorityStyle(todo.priority)}>
+    <div
+      className="row"
+      style={priorityStyle(todo.priority)}
+      title={`${priorityLabel(todo.priority)} priority`}
+    >
       <button
         type="button"
         className="row-head"
         aria-expanded={open}
         onClick={() => setOpen((value) => !value)}
       >
-        <span className="pip" title={`${priorityLabel(todo.priority)} priority`} />
         <span className="row-main">
           <span className="row-title">{todo.title}</span>
           <span className="row-sub">{subline}</span>
@@ -39,6 +42,7 @@ export default function TodoItem({ todo }: { todo: TodoView }) {
           <span className="row-bar">
             <span style={{ width: `${Math.round(todo.progress * 100)}%` }} />
           </span>
+          <span className="prio-mark" aria-hidden="true" />
         </span>
       </button>
 
@@ -59,7 +63,7 @@ export default function TodoItem({ todo }: { todo: TodoView }) {
             <Link className="link" href={`/todo/${todo.id}`}>
               Edit todo
             </Link>
-            <span className="count">{priorityLabel(todo.priority)} priority</span>
+            <span className="badge prio">{priorityLabel(todo.priority)} priority</span>
           </div>
         </div>
       )}

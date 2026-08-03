@@ -16,12 +16,13 @@
   --danger: #bf2f26;
   --danger-soft: #fbeceb;
 
-  /* Priority is a greyscale ramp: darkest = highest. */
-  --p1: #0a0a0a;
-  --p2: #4d4d4d;
-  --p3: #8a8a8a;
-  --p4: #bcbcbc;
-  --p5: #dcdcdc;
+  /* Priority is the colour on a card's left edge — it replaces writing the
+     level out. Hot to cold: red, orange, yellow, light blue, dark blue. */
+  --p1: #5c0000;
+  --p2: #be7022;
+  --p3: #fffd8d;
+  --p4: #3aa9e0;
+  --p5: #1f49b8;
 
   --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
   --rail: 230px;
@@ -46,11 +47,13 @@
     --danger: #e2695f;
     --danger-soft: #2a1412;
 
-    --p1: #f0f0f0;
-    --p2: #b4b4b4;
-    --p3: #808080;
-    --p4: #545454;
-    --p5: #383838;
+    /* Same ramp, except the deep red is lifted — #5c0000 on a near-black
+       background is all but invisible. */
+    --p1: #a81414;
+    --p2: #be7022;
+    --p3: #fffd8d;
+    --p4: #4cc0f0;
+    --p5: #4a72e8;
   }
 }
 
@@ -383,37 +386,6 @@ button {
   font-size: 14px;
 }
 
-/* ============ sort ============ */
-
-.sortbar {
-  display: flex;
-  border: 1px solid var(--line);
-}
-
-.sortbar a {
-  font-size: 12px;
-  padding: 6px 12px;
-  color: var(--muted);
-  white-space: nowrap;
-  border-left: 1px solid var(--line);
-  transition: background 0.12s, color 0.12s;
-}
-
-.sortbar a:first-child {
-  border-left: none;
-}
-
-.sortbar a:hover {
-  color: var(--fg);
-  background: var(--panel);
-}
-
-.sortbar a[aria-current="true"] {
-  background: var(--inv-bg);
-  color: var(--inv-fg);
-  font-weight: 600;
-}
-
 /* ============ next-up cards ============ */
 
 .group-label {
@@ -444,28 +416,29 @@ button {
   text-align: left;
   background: var(--card);
   border: 1px solid var(--line);
-  padding: 15px 16px 14px 20px;
+  padding: 15px 30px 14px 21px;
   cursor: pointer;
   transition: border-color 0.12s, background 0.12s;
 }
 
+/* Plain edge — it marks the card, it doesn't mean anything. Priority is the
+   square in the corner instead. */
 .card::before {
   content: "";
   position: absolute;
   left: 0;
   top: 0;
   bottom: 0;
-  width: 4px;
-  background: var(--prio, var(--p3));
+  width: 5px;
+  background: var(--fg);
 }
 
-.card:hover {
-  border-color: var(--fg);
-}
-
-.card.is-hero {
-  border-color: var(--fg);
-  background: var(--panel);
+/* Touch devices hold onto :hover after a tap, which leaves one card looking
+   picked. Only give the highlight to pointers that can actually hover. */
+@media (hover: hover) {
+  .card:hover {
+    border-color: var(--fg);
+  }
 }
 
 .card-body {
@@ -478,6 +451,26 @@ button {
   font-weight: 600;
   letter-spacing: -0.01em;
   overflow-wrap: anywhere;
+}
+
+/* Checked off and on its way out — the title goes with the tick. It keeps its
+   full colour for the moment it's still there; only the line says it's done. */
+.card-step.struck {
+  text-decoration: line-through;
+}
+
+/* Priority, as a small square in the corner. */
+.prio-mark {
+  width: 10px;
+  height: 10px;
+  background: var(--prio, var(--p3));
+  flex-shrink: 0;
+}
+
+.prio-mark.corner {
+  position: absolute;
+  top: 16px;
+  right: 14px;
 }
 
 .card-parent {
@@ -507,6 +500,9 @@ button {
   white-space: nowrap;
 }
 
+/* The one place the level is still spelled out: inside an opened todo. The
+   text stays readable and the colour rides the border, since a priority
+   colour light enough to work as a bar can be unreadable as type. */
 .badge.prio {
   color: var(--fg);
   border-color: var(--prio, var(--p3));
@@ -577,11 +573,6 @@ button {
   height: 16px;
   font-size: 9.5px;
   margin-top: 2px;
-}
-
-.busy {
-  opacity: 0.4;
-  pointer-events: none;
 }
 
 /* ============ modal ============ */
@@ -795,8 +786,10 @@ button {
   transition: background 0.12s;
 }
 
-.row-head:hover {
-  background: var(--panel);
+@media (hover: hover) {
+  .row-head:hover {
+    background: var(--panel);
+  }
 }
 
 .row-main {
@@ -819,14 +812,6 @@ button {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-
-.pip {
-  display: block;
-  width: 9px;
-  height: 9px;
-  background: var(--prio, var(--p3));
-  flex-shrink: 0;
 }
 
 .row-right {
@@ -852,7 +837,7 @@ button {
 }
 
 .row-panel {
-  padding: 4px 16px 18px 48px;
+  padding: 4px 16px 18px;
   background: var(--card);
 }
 
@@ -923,6 +908,66 @@ select {
   background-size: 5px 5px, 5px 5px;
   background-repeat: no-repeat;
   padding-right: 30px;
+}
+
+/* ============ priority picker ============ */
+
+.prios {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.prio-pick {
+  cursor: pointer;
+}
+
+/* The radio itself is only there to carry the value into the form. */
+.prio-pick input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.prio-face {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-height: 34px;
+  padding: 6px 13px;
+  border: 1px solid var(--line-strong);
+  font-size: 13px;
+  color: var(--muted);
+  white-space: nowrap;
+  transition: border-color 0.12s, color 0.12s;
+}
+
+/* The same square the card gets, at the same size. */
+.prio-face::before {
+  content: "";
+  width: 10px;
+  height: 10px;
+  background: var(--prio);
+  flex-shrink: 0;
+}
+
+@media (hover: hover) {
+  .prio-pick:hover .prio-face {
+    border-color: var(--fg);
+    color: var(--fg);
+  }
+}
+
+.prio-pick input:checked + .prio-face {
+  border-color: var(--fg);
+  box-shadow: inset 0 0 0 1px var(--fg);
+  color: var(--fg);
+  font-weight: 600;
+}
+
+.prio-pick input:focus-visible + .prio-face {
+  outline: 2px solid var(--fg);
+  outline-offset: 1px;
 }
 
 .btn {
@@ -1027,6 +1072,10 @@ select {
   flex-shrink: 0;
   cursor: grab;
   padding: 4px 3px;
+  /* The drag is ours — without this a touch scrolls the page instead. */
+  touch-action: none;
+  -webkit-user-select: none;
+  user-select: none;
 }
 
 .editor-row .grab:hover {
@@ -1179,6 +1228,11 @@ select {
   }
   .actions {
     flex-wrap: wrap;
+  }
+  /* A finger needs more to aim at than a 14px glyph. */
+  .editor-row .grab {
+    font-size: 18px;
+    padding: 9px 10px;
   }
   /* iOS Safari zooms the page whenever a focused field computes under 16px. */
   input[type="text"],

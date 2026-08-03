@@ -1,23 +1,16 @@
 import Link from "next/link";
 import NextUpBoard from "@/components/NextUpBoard";
-import SortBar from "@/components/SortBar";
-import { getBoard, parseSort } from "@/lib/queries";
+import { getBoard } from "@/lib/queries";
 
 export const dynamic = "force-dynamic";
 
-export default async function NextUpPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ sort?: string }>;
-}) {
-  const sort = parseSort((await searchParams).sort);
-  const board = await getBoard(sort);
+export default async function NextUpPage() {
+  const board = await getBoard();
 
   return (
     <>
       <div className="head">
         <h1 className="h1">Next up</h1>
-        {board.activeCount > 0 && <SortBar current={sort} basePath="/" />}
       </div>
 
       {board.activeCount === 0 ? (
@@ -39,11 +32,7 @@ export default async function NextUpPage({
           )}
         </div>
       ) : (
-        <NextUpBoard
-          groups={board.cardGroups}
-          completed={board.completed}
-          heroId={board.heroId}
-        />
+        <NextUpBoard cards={board.cards} completed={board.completed} />
       )}
     </>
   );

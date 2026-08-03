@@ -1,17 +1,11 @@
 import Link from "next/link";
-import SortBar from "@/components/SortBar";
 import TodoItem from "@/components/TodoItem";
-import { getBoard, parseSort } from "@/lib/queries";
+import { getBoard } from "@/lib/queries";
 
 export const dynamic = "force-dynamic";
 
-export default async function AllTodosPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ sort?: string }>;
-}) {
-  const sort = parseSort((await searchParams).sort);
-  const board = await getBoard(sort);
+export default async function AllTodosPage() {
+  const board = await getBoard();
   const nothingAtAll = board.activeCount === 0 && board.completed.length === 0;
 
   return (
@@ -24,7 +18,6 @@ export default async function AllTodosPage({
             row for its steps.
           </small>
         </h1>
-        {!nothingAtAll && <SortBar current={sort} basePath="/all" />}
       </div>
 
       {nothingAtAll ? (
@@ -36,16 +29,13 @@ export default async function AllTodosPage({
         </div>
       ) : (
         <>
-          {board.groups.map((group) => (
-            <div key={group.key}>
-              {group.label && <div className="group-label">{group.label}</div>}
-              <div className="list">
-                {group.todos.map((todo) => (
-                  <TodoItem key={todo.id} todo={todo} />
-                ))}
-              </div>
+          {board.todos.length > 0 && (
+            <div className="list">
+              {board.todos.map((todo) => (
+                <TodoItem key={todo.id} todo={todo} />
+              ))}
             </div>
-          ))}
+          )}
 
           {board.completed.length > 0 && (
             <>

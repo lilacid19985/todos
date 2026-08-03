@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import type { TodoView } from "@/lib/queries";
-import { DEFAULT_PRIORITY, PRIORITIES } from "@/lib/priority";
+import { DEFAULT_PRIORITY, PRIORITIES, priorityStyle } from "@/lib/priority";
 
 type Draft = {
   key: number;
@@ -54,13 +54,13 @@ export default function TodoForm({
   todo?: TodoView;
 }) {
   const counter = useRef(0);
-  const priorityRef = useRef<HTMLSelectElement>(null);
   const stepRefs = useRef(new Map<number, HTMLInputElement | null>());
   const [pendingFocus, setPendingFocus] = useState<number | null>(null);
 
-  // Dragging is only armed while the grab handle is held, so the text
-  // inputs keep their normal click-and-select behaviour.
-  const [dragArmed, setDragArmed] = useState(false);
+  // Dragging runs off pointer events rather than HTML5 drag-and-drop, which
+  // no mobile browser fires. The handle captures the pointer, so only it
+  // starts a drag and the text inputs keep normal click-and-select.
+  const rowRefs = useRef(new Map<number, HTMLDivElement | null>());
   const [dragIndex, setDragIndex] = useState<number | null>(null);
 
   const blank = (): Draft => ({
@@ -126,9 +126,15 @@ export default function TodoForm({
       return relinkFirst(next);
     });
 
-  const endDrag = () => {
-    setDragIndex(null);
-    setDragArmed(false);
+  const endDrag = () => setDragIndex(null);
+
+  /** Which row is under this point on the screen right now. */
+  const rowAt = (clientY: number): number | null => {
+    for (const [index, step] of steps.entries()) {
+      const box = rowRefs.current.get(step.key)?.getBoundingClientRect();
+      if (box && clientY >= box.top && clientY <= box.bottom) return index;
+    }
+    return null;
   };
 
   /** Enter always advances; only the buttons at the bottom submit. */
@@ -183,35 +189,33 @@ export default function TodoForm({
               className={`editor-row${dragIndex === index ? " dragging" : ""}${
                 steps[index + 1]?.unlinked ? " cut" : ""
               }`}
-              draggable={dragArmed}
-              onDragStart={(event) => {
-                setDragIndex(index);
-                event.dataTransfer.effectAllowed = "move";
-                // Firefox refuses to start a drag without payload.
-                event.dataTransfer.setData("text/plain", String(index));
+              ref={(element) => {
+                rowRefs.current.set(step.key, element);
               }}
-              onDragOver={(event) => {
-                if (dragIndex === null) return;
-                event.preventDefault();
-                event.dataTransfer.dropEffect = "move";
-                if (dragIndex !== index) {
-                  moveTo(dragIndex, index);
-                  setDragIndex(index);
-                }
-              }}
-              onDrop={(event) => {
-                event.preventDefault();
-                endDrag();
-              }}
-              onDragEnd={endDrag}
             >
               <button
                 type="button"
                 className="grab"
                 aria-label="Reorder step — drag, or use arrow keys"
                 title="Drag to reorder"
-                onMouseDown={() => setDragArmed(true)}
-                onMouseUp={() => setDragArmed(false)}
+                onPointerDown={(event) => {
+                  // Capture sends every later move here even when the finger
+                  // leaves the handle, which it immediately does.
+                  event.preventDefault();
+                  event.currentTarget.setPointerCapture(event.pointerId);
+                  event.currentTarget.focus();
+                  setDragIndex(index);
+                }}
+                onPointerMove={(event) => {
+                  if (dragIndex === null) return;
+                  const to = rowAt(event.clientY);
+                  if (to !== null && to !== dragIndex) {
+                    moveTo(dragIndex, to);
+                    setDragIndex(to);
+                  }
+                }}
+                onPointerUp={endDrag}
+                onPointerCancel={endDrag}
                 onKeyDown={(event) => {
                   if (event.key === "ArrowUp") {
                     event.preventDefault();
@@ -306,23 +310,28 @@ export default function TodoForm({
         </div>
       </div>
 
-      <div className="field narrow">
-        <label className="label" htmlFor="priority">
-          Priority
-        </label>
-        <select
-          id="priority"
-          name="priority"
-          ref={priorityRef}
-          defaultValue={String(todo?.priority ?? DEFAULT_PRIORITY)}
+      <div className="field">
+        <span className="label">Priority</span>
+        {/* Each choice wears the colour it will give the card, so you're
+            picking the rail you'll actually be reading later. */}
+        <div
+          className="prios"
+          role="radiogroup"
+          aria-label="Priority"
           onKeyDown={(event) => advance(event, () => undefined)}
         >
           {PRIORITIES.map((p) => (
-            <option key={p.value} value={p.value}>
-              {p.label}
-            </option>
+            <label key={p.value} className="prio-pick" style={priorityStyle(p.value)}>
+              <input
+                type="radio"
+                name="priority"
+                value={p.value}
+                defaultChecked={p.value === (todo?.priority ?? DEFAULT_PRIORITY)}
+              />
+              <span className="prio-face">{p.label}</span>
+            </label>
           ))}
-        </select>
+        </div>
       </div>
 
       <div className="actions">

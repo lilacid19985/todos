@@ -46,8 +46,14 @@ todos. It refuses to run if you already have any.
   a todo with unlinked steps gets a card each (they're badged "2 at once").
   Check one off right on the card, or click it for the full plan — finished
   steps, upcoming ones, and an Edit button top-right.
-- **Sorting**: Priority (default), Closest to done, or Owner — the last one
-  splits the board into what's on you vs. what you're waiting on.
+- **Priority is a colour**, never a word on the card: the rail down a card's
+  left edge runs red (highest), orange, yellow, light blue, dark blue (lowest).
+  Open a todo and the level is spelled out inside.
+- **The order is automatic** — there's nothing to sort, and no sections. One
+  list: everything you can act on now comes first, then what you're waiting on
+  someone else for, then todos with no steps yet, with priority deciding inside
+  each of those. Your own work is always at the top, and the card sitting there
+  is what to do next.
 - **All todos** (`/all`) is the full list, including completed ones, if you want
   the wider view.
 
@@ -75,7 +81,7 @@ behind a single password prompt at `/login`. Leave it unset (as in the local
 
 ```
 prisma/schema.prisma      Todo, Step
-src/lib/queries.ts        reads + all sorting/grouping logic
+src/lib/queries.ts        reads + the one sort order
 src/lib/actions.ts        server actions (create/update/delete/toggle)
 src/app/(app)/page.tsx    main view — next-up cards + detail modal
 src/app/(app)/all         full list

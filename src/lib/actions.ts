@@ -124,10 +124,15 @@ export async function deleteTodo(form: FormData) {
   redirect("/");
 }
 
+/**
+ * Deliberately doesn't revalidate. The write lands immediately, but a checked
+ * step that's still on screen would be yanked out from under you the moment
+ * the board re-read the database — so the caller decides when the list catches
+ * up, once its tick has had time to be seen.
+ */
 export async function toggleStep(stepId: string, done: boolean) {
   await prisma.step.update({
     where: { id: stepId },
     data: { done, doneAt: done ? new Date() : null },
   });
-  revalidatePath("/");
 }

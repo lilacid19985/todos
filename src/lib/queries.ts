@@ -1,17 +1,5 @@
 import { prisma } from "./db";
 
-export type SortKey = "priority" | "progress" | "owner";
-
-export const SORTS: { key: SortKey; label: string }[] = [
-  { key: "priority", label: "Priority" },
-  { key: "progress", label: "Closest to done" },
-  { key: "owner", label: "Owner" },
-];
-
-export function parseSort(value: unknown): SortKey {
-  return SORTS.some((s) => s.key === value) ? (value as SortKey) : "priority";
-}
-
 export type StepView = {
   id: string;
   title: string;
@@ -38,12 +26,8 @@ export type TodoView = {
   completedAt: number | null;
 };
 
-export type Group = { key: string; label: string; todos: TodoView[] };
-
 /** One next-up card: a todo plus the one open step the card is about. */
 export type CardView = { id: string; todo: TodoView; step: StepView | null };
-
-export type CardGroup = { key: string; label: string; cards: CardView[] };
 
 function toView(todo: {
   id: string;
@@ -109,32 +93,27 @@ function byPriority(a: TodoView, b: TodoView): number {
   return a.priority - b.priority || a.title.localeCompare(b.title);
 }
 
-function byProgress(a: TodoView, b: TodoView): number {
-  return b.progress - a.progress || byPriority(a, b);
+/**
+ * The only ordering in the app, and it isn't a choice: what you can act on now
+ * comes first, then what someone else owes you, then todos with nothing
+ * planned. It's one list, not three sections — the band decides the broad
+ * order and priority decides everything inside it, so your own work always
+ * floats to the top without anything being labelled or fenced off.
+ */
+function band(mine: boolean, open: boolean): number {
+  if (!open) return 2;
+  return mine ? 0 : 1;
 }
 
-/** A todo is on you if there's anything at all you can do right now. */
-function onMe(todo: TodoView): boolean {
-  return todo.nextSteps.some((step) => step.mine);
+function todoBand(todo: TodoView): number {
+  return band(
+    todo.nextSteps.some((step) => step.mine),
+    todo.nextSteps.length > 0,
+  );
 }
 
-/** Splits into what's on me vs. what I'm waiting on someone else for. */
-function groupByOwner(todos: TodoView[]): Group[] {
-  const mine: TodoView[] = [];
-  const theirs: TodoView[] = [];
-  const idle: TodoView[] = [];
-
-  for (const todo of todos) {
-    if (!todo.nextSteps.length) idle.push(todo);
-    else if (onMe(todo)) mine.push(todo);
-    else theirs.push(todo);
-  }
-
-  return [
-    { key: "mine", label: "On me", todos: mine.sort(byPriority) },
-    { key: "theirs", label: "Waiting on someone else", todos: theirs.sort(byPriority) },
-    { key: "idle", label: "No steps yet", todos: idle.sort(byPriority) },
-  ].filter((group) => group.todos.length > 0);
+function byDefault(a: TodoView, b: TodoView): number {
+  return todoBand(a) - todoBand(b) || byPriority(a, b);
 }
 
 /** One card per open step, so parallel steps each get their own. */
@@ -143,58 +122,32 @@ function cardsFor(todo: TodoView): CardView[] {
   return todo.nextSteps.map((step) => ({ id: step.id, todo, step }));
 }
 
-/** Same split as groupByOwner, but per card — a todo can land in both. */
-function cardsByOwner(cards: CardView[]): CardGroup[] {
-  return [
-    {
-      key: "mine",
-      label: "On me",
-      cards: cards.filter((card) => card.step?.mine),
-    },
-    {
-      key: "theirs",
-      label: "Waiting on someone else",
-      cards: cards.filter((card) => card.step && !card.step.mine),
-    },
-    { key: "idle", label: "No steps yet", cards: cards.filter((card) => !card.step) },
-  ].filter((group) => group.cards.length > 0);
+/**
+ * Per card rather than per todo, since one todo can have a step on you and a
+ * step on someone else open at the same time — those two cards belong in
+ * different parts of the list.
+ */
+function byCard(a: CardView, b: CardView): number {
+  const rank = (card: CardView) =>
+    band(Boolean(card.step?.mine), Boolean(card.step));
+  return rank(a) - rank(b) || byPriority(a.todo, b.todo);
 }
 
-export async function getBoard(sort: SortKey) {
+export async function getBoard() {
   const rows = await prisma.todo.findMany({
     include: { steps: { orderBy: { position: "asc" } } },
   });
 
   const views = rows.map(toView);
-  const active = views.filter((t) => !t.complete);
+  const active = views.filter((t) => !t.complete).sort(byDefault);
   const completed = views
     .filter((t) => t.complete)
     .sort((a, b) => (b.completedAt ?? 0) - (a.completedAt ?? 0));
 
-  const ranked = [...active].sort(sort === "progress" ? byProgress : byPriority);
+  // Sorting is stable, so two cards off the same todo keep their step order.
+  const cards = active.flatMap(cardsFor).sort(byCard);
 
-  let groups: Group[];
-  let cardGroups: CardGroup[];
-  if (sort === "owner") {
-    groups = groupByOwner(active);
-    cardGroups = cardsByOwner([...active].sort(byPriority).flatMap(cardsFor));
-  } else {
-    groups = ranked.length ? [{ key: "all", label: "", todos: ranked }] : [];
-    const cards = ranked.flatMap(cardsFor);
-    cardGroups = cards.length ? [{ key: "all", label: "", cards }] : [];
-  }
-
-  // The outlined card ignores the chosen sort — it always answers "what's
-  // most important right now", which is the highest-priority open step.
-  const top = [...active].filter((t) => t.nextSteps.length).sort(byPriority)[0];
-
-  return {
-    groups,
-    cardGroups,
-    completed,
-    activeCount: active.length,
-    heroId: top?.nextSteps[0].id ?? null,
-  };
+  return { todos: active, cards, completed, activeCount: active.length };
 }
 
 export async function getTodo(id: string) {
