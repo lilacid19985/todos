@@ -2,18 +2,21 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import { toggleStep } from "@/lib/actions";
+import { toggleStep, toggleTodo } from "@/lib/actions";
 
-/** How long a checked step sits there showing its tick before the list moves on. */
+/** How long a checked box sits there showing its tick before the list moves on. */
 const SETTLE_MS = 3000;
 
-export default function StepCheck({
+export default function Check({
   id,
+  kind = "step",
   done,
   small = false,
   onToggle,
 }: {
   id: string;
+  /** A one-off todo has no step to tick, so the tick lands on the todo itself. */
+  kind?: "step" | "todo";
   done: boolean;
   small?: boolean;
   /** Reports the box's own state, so the row can strike its title to match. */
@@ -40,14 +43,15 @@ export default function StepCheck({
       type="button"
       className={`box${checked ? " checked" : ""}${small ? " sm" : ""}`}
       aria-pressed={checked}
-      aria-label={checked ? "Mark step not done" : "Mark step done"}
+      aria-label={checked ? "Mark not done" : "Mark done"}
       onClick={() => {
         const next = !checked;
         setChecked(next);
         onToggle?.(next);
+        const write = kind === "todo" ? toggleTodo(id, next) : toggleStep(id, next);
         // If the write fails the tick has to come back off, or it would claim
         // something got done that didn't.
-        toggleStep(id, next).catch(() => {
+        write.catch(() => {
           setChecked(!next);
           onToggle?.(!next);
         });

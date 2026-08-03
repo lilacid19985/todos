@@ -178,6 +178,7 @@ export default function TodoForm({
       <div className="field">
         <div className="field-head">
           <span className="label">Steps</span>
+          <span className="hint">Leave empty for a one-off — a todo on its own</span>
         </div>
 
         <div className="editor">

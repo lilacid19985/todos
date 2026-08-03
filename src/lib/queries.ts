@@ -21,6 +21,11 @@ export type TodoView = {
   totalCount: number;
   progress: number;
   complete: boolean;
+  /**
+   * A one-off: no steps, nothing to plan, so the todo itself is the single
+   * line you check off — and it's on you, since there's no step to hand over.
+   */
+  simple: boolean;
   /** Everything that's open right now — the whole current stage. */
   nextSteps: StepView[];
   completedAt: number | null;
@@ -33,6 +38,8 @@ function toView(todo: {
   id: string;
   title: string;
   priority: number;
+  done: boolean;
+  doneAt: Date | null;
   steps: {
     id: string;
     title: string;
@@ -64,10 +71,17 @@ function toView(todo: {
 
   const totalCount = steps.length;
   const doneCount = steps.filter((s) => s.done).length;
-  const complete = totalCount > 0 && doneCount === totalCount;
-  const completedAt = complete
-    ? Math.max(...todo.steps.map((s) => s.doneAt?.getTime() ?? 0))
-    : null;
+
+  // No steps means there was never a plan — the todo is the one thing to do,
+  // and its own tick is what finishes it. With steps, the steps decide and the
+  // todo's own tick is ignored.
+  const simple = totalCount === 0;
+  const complete = simple ? todo.done : doneCount === totalCount;
+  const completedAt = !complete
+    ? null
+    : simple
+      ? todo.doneAt?.getTime() ?? 0
+      : Math.max(...todo.steps.map((s) => s.doneAt?.getTime() ?? 0));
 
   // The earliest stage still holding open steps is what's open now — all of
   // it, since nothing inside a stage waits on anything else inside it.
@@ -82,8 +96,9 @@ function toView(todo: {
     steps,
     doneCount,
     totalCount,
-    progress: totalCount === 0 ? 0 : doneCount / totalCount,
+    progress: simple ? 0 : doneCount / totalCount,
     complete,
+    simple,
     nextSteps,
     completedAt,
   };
@@ -95,10 +110,10 @@ function byPriority(a: TodoView, b: TodoView): number {
 
 /**
  * The only ordering in the app, and it isn't a choice: what you can act on now
- * comes first, then what someone else owes you, then todos with nothing
- * planned. It's one list, not three sections — the band decides the broad
- * order and priority decides everything inside it, so your own work always
- * floats to the top without anything being labelled or fenced off.
+ * comes first, then what someone else owes you, then anything with nothing to
+ * act on. It's one list, not three sections — the band decides the broad order
+ * and priority decides everything inside it, so your own work always floats to
+ * the top without anything being labelled or fenced off.
  */
 function band(mine: boolean, open: boolean): number {
   if (!open) return 2;
@@ -106,6 +121,9 @@ function band(mine: boolean, open: boolean): number {
 }
 
 function todoBand(todo: TodoView): number {
+  // A one-off is on you and open by definition — there's no step to be waiting
+  // on and no plan missing — so it sits among your own work, not below it.
+  if (todo.simple) return band(true, true);
   return band(
     todo.nextSteps.some((step) => step.mine),
     todo.nextSteps.length > 0,
@@ -116,7 +134,10 @@ function byDefault(a: TodoView, b: TodoView): number {
   return todoBand(a) - todoBand(b) || byPriority(a, b);
 }
 
-/** One card per open step, so parallel steps each get their own. */
+/**
+ * One card per open step, so parallel steps each get their own. A one-off has
+ * no steps to card up, so it gets a single card standing for the todo itself.
+ */
 function cardsFor(todo: TodoView): CardView[] {
   if (!todo.nextSteps.length) return [{ id: todo.id, todo, step: null }];
   return todo.nextSteps.map((step) => ({ id: step.id, todo, step }));
@@ -129,7 +150,7 @@ function cardsFor(todo: TodoView): CardView[] {
  */
 function byCard(a: CardView, b: CardView): number {
   const rank = (card: CardView) =>
-    band(Boolean(card.step?.mine), Boolean(card.step));
+    card.step ? band(card.step.mine, true) : todoBand(card.todo);
   return rank(a) - rank(b) || byPriority(a.todo, b.todo);
 }
 

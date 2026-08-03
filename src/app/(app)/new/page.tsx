@@ -9,7 +9,10 @@ export default function NewTodoPage() {
       <div className="head">
         <h1 className="h1">
           New todo
-          <small>A todo completes itself once every step under it is checked off.</small>
+          <small>
+            A title on its own is a one-off you check off itself. Add steps and it
+            completes once every one of them is checked.
+          </small>
         </h1>
       </div>
       <TodoForm action={createTodo} />

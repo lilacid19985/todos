@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import type { StepView } from "@/lib/queries";
-import StepCheck from "./StepCheck";
+import Check from "./Check";
 
 /**
  * The whole plan, in order. Numbers are stages, not positions — steps that
@@ -38,7 +38,7 @@ export default function StepList({
           >
             {step.unlinked ? "+" : String(step.stage + 1).padStart(2, "0")}
           </span>
-          <StepCheck
+          <Check
             id={step.id}
             done={step.done}
             small

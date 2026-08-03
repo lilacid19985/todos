@@ -529,7 +529,8 @@ button {
   font-weight: 550;
 }
 
-.badge.empty-state {
+/* No steps under it — this card is the whole todo. */
+.badge.one-off {
   border-style: dashed;
 }
 
@@ -761,6 +762,29 @@ button {
   white-space: nowrap;
 }
 
+/* A todo with no steps, opened up: one line, the todo itself. Same shape as a
+   step so an opened todo reads the same either way — minus the number, since
+   there's no plan for it to be first in. */
+.one-off {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 7px 0;
+}
+
+.one-off.done .step-text {
+  color: var(--faint);
+  text-decoration: line-through;
+}
+
+/* Not somebody else's, so not amber — it's just a note on what this is. */
+.one-off-tag {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  color: var(--faint);
+}
+
 /* ============ all-todos list ============ */
 
 .list {
@@ -872,6 +896,12 @@ button {
   justify-content: space-between;
   align-items: baseline;
   gap: 12px;
+}
+
+.hint {
+  font-size: 11.5px;
+  color: var(--faint);
+  text-align: right;
 }
 
 input[type="text"],

@@ -106,12 +106,20 @@ export async function updateTodo(form: FormData) {
   const title = text(form, "title");
   if (!id || !title) return;
 
+  const steps = readSteps(form);
+
   await prisma.todo.update({
     where: { id },
-    data: { title, priority: clampPriority(form.get("priority")) },
+    data: {
+      title,
+      priority: clampPriority(form.get("priority")),
+      // Given a plan, the steps say whether it's done. Drop any tick it picked
+      // up as a one-off so it can't come back later if the steps are removed.
+      ...(steps.length > 0 ? { done: false, doneAt: null } : {}),
+    },
   });
 
-  await writeSteps(id, readSteps(form));
+  await writeSteps(id, steps);
   revalidatePath("/");
   redirect("/");
 }
@@ -133,6 +141,17 @@ export async function deleteTodo(form: FormData) {
 export async function toggleStep(stepId: string, done: boolean) {
   await prisma.step.update({
     where: { id: stepId },
+    data: { done, doneAt: done ? new Date() : null },
+  });
+}
+
+/**
+ * A one-off has no step to check, so its tick lands on the todo. Same deal as
+ * toggleStep: the write is immediate, the refresh is the caller's call.
+ */
+export async function toggleTodo(todoId: string, done: boolean) {
+  await prisma.todo.update({
+    where: { id: todoId },
     data: { done, doneAt: done ? new Date() : null },
   });
 }

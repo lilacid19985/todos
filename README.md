@@ -1,9 +1,10 @@
 # todos
 
-A minimal todo tracker. Every todo is a plan of steps; the todo completes
-itself when the last step is checked off. Steps run one after another by
-default, and you can unlink any of them to run side by side. The main view
-shows only what's actually open — one card per open step, checkable in place.
+A minimal todo tracker. A todo can be a one-off — just a title you tick off —
+or a plan of steps that completes itself when the last step is checked. Steps
+run one after another by default, and you can unlink any of them to run side by
+side. The main view shows only what's actually open — one card per open step (or
+per one-off), checkable in place.
 
 ## Run it
 
@@ -27,8 +28,13 @@ todos. It refuses to run if you already have any.
 
 ## How it works
 
-- **Todos** have a title, short description, and a priority (Highest → Lowest).
-  You can't check off a todo directly.
+- **Todos** have a title and a priority (Highest → Lowest). Give one steps and
+  you can't check it off directly — the steps decide when it's done.
+- **One-offs.** Title, priority, Create — that's a todo on its own: no steps, no
+  plan, and you tick the todo itself to finish it. It's always on you, so it
+  sits with your own work rather than off at the bottom, and it takes its place
+  by priority like anything else. Add steps to it later and it becomes a plan;
+  the tick it had as a one-off is dropped, since the steps decide from then on.
 - **Steps** are ordered — first to last, each one waiting on the step above it.
   Checking off the last open step completes the todo. You can check them in any
   order; the order is a plan, not a lock.
@@ -43,25 +49,26 @@ todos. It refuses to run if you already have any.
   else" for anything you're only waiting on — put their name in the step text,
   e.g. *"wait for Sam to send the proposal"*.
 - **Next up** (the main view) shows one card per step that's open right now, so
-  a todo with unlinked steps gets a card each (they're badged "2 at once").
-  Check one off right on the card, or click it for the full plan — finished
-  steps, upcoming ones, and an Edit button top-right.
+  a todo with unlinked steps gets a card each (they're badged "2 at once"). A
+  one-off gets a single card carrying its own title, badged "One-off". Check one
+  off right on the card, or click it for the full plan — finished steps,
+  upcoming ones, and an Edit button top-right.
 - **Priority is a colour**, never a word on the card: the rail down a card's
   left edge runs red (highest), orange, yellow, light blue, dark blue (lowest).
   Open a todo and the level is spelled out inside.
 - **The order is automatic** — there's nothing to sort, and no sections. One
-  list: everything you can act on now comes first, then what you're waiting on
-  someone else for, then todos with no steps yet, with priority deciding inside
-  each of those. Your own work is always at the top, and the card sitting there
-  is what to do next.
+  list: everything you can act on now — your own steps and your one-offs —
+  comes first, then what you're waiting on someone else for, with priority
+  deciding inside each of those. Your own work is always at the top, and the
+  card sitting there is what to do next.
 - **All todos** (`/all`) is the full list, including completed ones, if you want
   the wider view.
 
 ### Keyboard
 
-In the create/edit form, Enter never submits — it moves you along. Title →
-description, priority → first step, and inside the step list it jumps to the
-next step or adds a new one. Use the Create/Save button to commit.
+In the create/edit form, Enter never submits — it moves you along. Title → first
+step, and inside the step list it jumps to the next step or adds a new one. Use
+the Create/Save button to commit — so a title on its own commits as a one-off.
 
 ## Deploying
 

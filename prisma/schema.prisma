@@ -12,12 +12,17 @@ datasource db {
 }
 
 model Todo {
-  id        String   @id @default(cuid())
+  id        String    @id @default(cuid())
   title     String
   // 1 = Highest, 2 = High, 3 = Medium, 4 = Low, 5 = Lowest
-  priority  Int      @default(3)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  priority  Int       @default(3)
+  // A todo with no steps is a one-off: nothing to plan, so the todo itself is
+  // the thing you check. Both fields go quiet the moment it has steps — the
+  // steps decide whether it's done then.
+  done      Boolean   @default(false)
+  doneAt    DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
 
   steps Step[]
 }

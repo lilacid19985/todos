@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useState } from "react";
 import type { TodoView } from "@/lib/queries";
 import { priorityLabel, priorityStyle } from "@/lib/priority";
+import OneOff from "./OneOff";
 import StepList from "./StepList";
 
 export default function TodoItem({ todo }: { todo: TodoView }) {
@@ -11,13 +12,16 @@ export default function TodoItem({ todo }: { todo: TodoView }) {
 
   let subline: string;
   if (todo.complete) subline = "Complete";
+  else if (todo.simple) subline = "One-off";
   else if (todo.nextSteps.length > 1) {
     const titles = todo.nextSteps.map((step) => step.title).join(" · ");
     subline = `Next (${todo.nextSteps.length} at once): ${titles}`;
   } else if (todo.nextSteps.length === 1) {
     const [step] = todo.nextSteps;
     subline = `Next: ${step.title}${step.mine ? "" : " · someone else"}`;
-  } else subline = "No steps yet";
+  } else subline = "Nothing open";
+
+  // Nothing to count or fill on a one-off — it's one thing, done or not.
 
   return (
     <div
@@ -36,25 +40,24 @@ export default function TodoItem({ todo }: { todo: TodoView }) {
           <span className="row-sub">{subline}</span>
         </span>
         <span className="row-right">
-          <span className="count">
-            {todo.doneCount}/{todo.totalCount}
-          </span>
-          <span className="row-bar">
-            <span style={{ width: `${Math.round(todo.progress * 100)}%` }} />
-          </span>
+          {!todo.simple && (
+            <>
+              <span className="count">
+                {todo.doneCount}/{todo.totalCount}
+              </span>
+              <span className="row-bar">
+                <span style={{ width: `${Math.round(todo.progress * 100)}%` }} />
+              </span>
+            </>
+          )}
           <span className="prio-mark" aria-hidden="true" />
         </span>
       </button>
 
       {open && (
         <div className="row-panel">
-          {todo.steps.length === 0 ? (
-            <p className="desc">
-              No steps yet.{" "}
-              <Link className="link" href={`/todo/${todo.id}`}>
-                Add some
-              </Link>
-            </p>
+          {todo.simple ? (
+            <OneOff todo={todo} />
           ) : (
             <StepList steps={todo.steps} nextSteps={todo.nextSteps} />
           )}

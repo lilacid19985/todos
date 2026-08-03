@@ -4,7 +4,8 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import type { CardView, TodoView } from "@/lib/queries";
 import { priorityLabel, priorityStyle } from "@/lib/priority";
-import StepCheck from "./StepCheck";
+import Check from "./Check";
+import OneOff from "./OneOff";
 import StepList from "./StepList";
 
 function Card({ card, onOpen }: { card: CardView; onOpen: () => void }) {
@@ -14,7 +15,7 @@ function Card({ card, onOpen }: { card: CardView; onOpen: () => void }) {
   const atOnce = todo.nextSteps.length;
   // Priority left with the rail, so the footer can now come out empty.
   const waiting = Boolean(step && !step.mine);
-  const hasFoot = waiting || atOnce > 1 || todo.totalCount === 0;
+  const hasFoot = waiting || atOnce > 1 || todo.simple;
   // Ticked off, but the card hasn't dropped out of the list yet.
   const [struck, setStruck] = useState(false);
 
@@ -36,27 +37,28 @@ function Card({ card, onOpen }: { card: CardView; onOpen: () => void }) {
     >
       <span className="prio-mark corner" aria-hidden="true" />
 
-      {step ? (
-        // Checking off here must not also open the modal.
-        <span onClick={(event) => event.stopPropagation()}>
-          <StepCheck id={step.id} done={false} onToggle={setStruck} />
-        </span>
-      ) : (
-        <span className="box" style={{ opacity: 0.3 }} aria-hidden="true" />
-      )}
+      {/* Checking off here must not also open the modal. A one-off has no step
+          under it, so the box ticks the todo itself. */}
+      <span onClick={(event) => event.stopPropagation()}>
+        <Check
+          id={step ? step.id : todo.id}
+          kind={step ? "step" : "todo"}
+          done={false}
+          onToggle={setStruck}
+        />
+      </span>
 
       <div className="card-body">
         <div className={`card-step${struck ? " struck" : ""}`}>
-          {step ? step.title : "No steps yet"}
+          {step ? step.title : todo.title}
         </div>
-        <div className="card-parent">{todo.title}</div>
+        {/* Only a step needs to say what it belongs to. */}
+        {step && <div className="card-parent">{todo.title}</div>}
         {hasFoot && (
           <div className="card-foot">
             {waiting && <span className="badge waiting">Someone else</span>}
             {atOnce > 1 && <span className="badge parallel">{atOnce} at once</span>}
-            {todo.totalCount === 0 && (
-              <span className="badge empty-state">Add steps</span>
-            )}
+            {todo.simple && <span className="badge one-off">One-off</span>}
           </div>
         )}
       </div>
@@ -152,14 +154,8 @@ export default function NextUpBoard({
                 </div>
               )}
 
-              {open.steps.length === 0 ? (
-                <p className="desc">
-                  This todo has no steps yet, so nothing can be checked off.{" "}
-                  <Link className="link" href={`/todo/${open.id}`}>
-                    Add some
-                  </Link>
-                  .
-                </p>
+              {open.simple ? (
+                <OneOff todo={open} />
               ) : (
                 <StepList steps={open.steps} nextSteps={open.nextSteps} />
               )}
